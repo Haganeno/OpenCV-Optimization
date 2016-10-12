@@ -5,7 +5,7 @@
  */
  
 
-#include "projet_sob_med.h"
+#include "projet_sob_med_opt.h"
  
 using namespace std;
 using namespace cv;
@@ -15,14 +15,17 @@ using std::cout;
 
 
 /*--------------- MAIN FUNCTION ---------------*/
-int main () {
-
+int main (int argc, char* argv[]) {
+	
+	string s = "time_med_opt_"+string(argv[1])+".txt";
+  ofstream o(s.c_str());
+  
+  ofstream o2("time_sobel_opt.txt");
 // déclaration des variables 
 // Mat structure contenant l'image
   Mat3b frame; // couleur
   Mat frame_gray, frame1; // niveau de gris 
-  Mat grad_x, grad_y;
-  Mat abs_grad_y, abs_grad_x, grad;
+  Mat grad;
 
   int ddepth = CV_16S;
   int scale = 1;
@@ -37,9 +40,10 @@ int main () {
   cvMoveWindow("Video gray", 800, 30);
   cvMoveWindow("Video mediane", 10, 500);
   cvMoveWindow("Video contours", 800, 500);
-  
+
   while(key!='q'){
   // acquisition d'une image - librairie OpenCV
+    
     frame = imread("img_proj.jpg", CV_LOAD_IMAGE_COLOR);
     
     if(! frame.data )                              // Check for invalid input
@@ -51,12 +55,34 @@ int main () {
   //conversion en niveau de gris - librairie OpenCV
     cvtColor(frame, frame_gray, CV_BGR2GRAY);
 
+   timeval time;
+    gettimeofday(&time, NULL);
+  	double time1 = time.tv_sec+(time.tv_usec/1000000.0);
+  
+
    // median - librairie OpenCV	
-    medianBlur(frame_gray, frame1, 3);
+    median_filter_sort(frame_gray, frame1, atoi(argv[1])); // change median filter sort by opt filter
+    
+    gettimeofday(&time, NULL);
+	double time2 = time.tv_sec+(time.tv_usec/1000000.0);
+	o << (time2 - time1) << endl;
+    
+    
+    
+    
+    
+    timeval new_time;
+	gettimeofday(&new_time, NULL);
+	double time3 = new_time.tv_sec+(new_time.tv_usec/1000000.0);
     
     //Sobel
-    sobel_opt(frame1, grad, frame.rows, frame.cols);
+    sobel_opt(frame1, grad, frame1.rows, frame1.cols);
 
+	gettimeofday(&new_time, NULL);
+	double time4 = new_time.tv_sec+(new_time.tv_usec/1000000.0);
+	o2 << (time4 - time3) << endl;
+	
+	
 	// visualisation
 	// taille d'image réduite pour meuilleure disposition sur écran
     resize(frame, frame, Size(), 0.5, 0.5);
@@ -71,54 +97,12 @@ int main () {
     
     key=waitKey(5);
   }
-  // getTime()
   }
   
   
- /*--------------- FUNCTIONS ---------------*/ 
- 
- 
- void median_filter_hist_v1(Mat img_gray, Mat& img_out){
-	 
- }
- 
- 
- // filtre median avec trie (non opt)
- // r indique le diamètre du filtre à utiliser (doit être impair et >=3)
-  void median_filter_sort_v1(Mat img_gray, Mat& img_out, int d) {
-  	
-  	if(d%2 != 0){
-    	cout << "Error, must be odd number"; return -1;
-  	}
-  	
-  	int n = img_gray.rows;
-  	int m = img_gray.cols;
-  	
-  	img_gray.copyTo(img_out);
-  	  	
-  	// parcourt l'image
-  	for(int i = 1; i < n; i++) {
-  		for(int j = 1; j < m; j++) {
-  			int window [d*d];
-  			int k = 0;
-			
-			// recupere une fenetre 3x3 autour de l'element en (i,j)
-			// faire un déroulage de boucle
-  			for(int h = i-r+(d/2); h < i+r-(d/2);h++) {
-  				for(int l = j-r+(d/2); l < j+r-(d/2);l++) {
-  					window[k] = img_gray.at<int>(h, l);
-					k++;
-  				}
-  			}
-			sort(window, 20); // trie la fenetre
-			img_out.at<int>(i, j) = window[4]// recupere le median de la fenetre triee
-  		}
-  	}
-  	
-  }
+/*--------------- FUNCTIONS ---------------*/
   
-  
-void sobel_opt(Mat img_in, Mat& img_out, int row, int col) {
+  void sobel_opt(Mat img_in, Mat& img_out, int row, int col) {
 
 	int n;
 	int m;
@@ -170,21 +154,62 @@ void sobel_opt(Mat img_in, Mat& img_out, int row, int col) {
 }
 
 
-// Implémente le tri rapide pour le filtre median à grand rayon (>20)
-  // Sinon, utilise le tri par insertion pour les petits tableaux(<=20):
-  // Insertion sort est un algo de tri quadratique en général
-  // mais très rapide quand le tableau à trier est petit
-  void sort(int[] array, int threshold) {
+
+// filtre median avec trie (non opt)
+ // r indique le diam?tre du filtre ? utiliser (doit ?tre impair et >=3)
+  void median_filter_sort(Mat img_gray, Mat& img_out, int d) {
   
-	  int n = array.size();
-	  
+  	if(d%2 == 0 || d < 3){
+    	cout << "Error, must be odd number or >= 3"<<endl; return;
+  	}
+  	
+  	int n = img_gray.rows;
+  	int m = img_gray.cols;
+  	
+  	img_gray.copyTo(img_out);
+  	  		
+  	// parcourt l'image
+  	for(int i = 1; i < n-1; i++) {
+  		for(int j = 1; j < m-1; j++) {
+  			int window [d*d];
+  			int k = 0;
+			if(i-(d/2) >= 0 && j-(d/2) >=0 && i+(d/2) <n && j+(d/2) < m){
+				// recupere une fenetre dxd autour de l'element en (i,j)
+				// faire un déroulage de boucle;
+	  			for(int h = i-(d/2); h <= i+(d/2);h++) {
+	  				for(int l = j-(d/2); l <= j+(d/2);l++) {
+	  					window[k] = img_gray.at<uint8>(h, l);
+						k++;
+						
+	  				}
+	  			}
+		  
+				sort(window, d*d, 20); // trie la fenetre (insertion_sort pour 3x3, quicksort pour plus grand
+				img_out.at<uint8>(i, j) = window[4];// recupere le median de la fenetre triee
+  			}
+  		}
+  		
+  	}
+  	
+  }
+
+
+
+// Impl?mente le tri rapide pour le filtre median ? grand rayon (>20)
+  // Sinon, utilise le tri par insertion pour les petits tableaux(<=20):
+  // Insertion sort est un algo de tri quadratique en g?n?ral
+  // mais tr?s rapide quand le tableau ? trier est petit
+  void sort(int array[], int size, int threshold) {
+	  int n = size;
 	  // tri par insertion pour les petits tableaux
-	  if(n <= threshold) insertion_sort(array, n);
+	  if(n < threshold) insertion_sort(array, n);
 	  // sinon, quicksort
 	  else quicksort(array, 0, n-1);
+	  
+	 
   }
   
-  void insertion_sort(int[] array, int n) {
+  void insertion_sort(int array[], int n) {
 	for(int i = 1; i < n; i++) {
 			  int j = i;
 			  while(j > 0 && array[j-1] > array[j]) {
@@ -197,32 +222,46 @@ void sobel_opt(Mat img_in, Mat& img_out, int row, int col) {
 		  }
   }
   
-  void quicksort(int[] array, int start, int end) {
+  
+  //TODO: gérer les bords
+  void quicksort(int array[], int start, int end) {
   	if(start < end){
-  		p = part(array, start, end);
-  		quicksort(array, start, p);
-  		quicksort(array, p, end);
+  		int p = part(array, start, end);
+  		quicksort(array, start, p-1);
+  		quicksort(array, p+1, end);
   	}
   }
   
-  int part(int[] array, int s, int e) {
-  	int pivot = array[e];
-  	int i = s;
-  	for(int j = s; j < e - 1; j++) {
-  		if(array[j] <= pivot) {
-  			int temp = array[i];
-  			array[i] = array[j];
-  			array[j] = temp;
+  
+  // inspiré de algolist.net/Algorithms/Sorting/Quicksort
+  int part(int array[], int s, int e) {
+  	int i = s, j = e;
+  	int tmp;
+  	int pivot = array[(s + e) / 2];
+  	
+  	while(i <= j) {
+  		while(array[i] <= pivot) {
   			i++;
   		}
+  		
+  		while(array[j] > pivot) {
+  			j--;
+  		}
+  		
+  		if(i <= j) {
+	  		swap(array[i], array[j]);
+  		}
   	}
-  	int temp = array[i];
-  	array[i] = array[j];
-  	array[j] = temp;
-  	
-  	return i;	
+  		
+  	return j;	
   }
   
-
-
-    
+  void swap(int& a, int& b) {
+  	
+  	int temp = a;
+  	a = b;
+  	b = temp;
+  	
+  }
+  
+   

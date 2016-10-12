@@ -24,7 +24,8 @@ using std::cout;
 /*--------------- MAIN FUNCTION ---------------*/
 int main () {
 
-  ofstream o("time_base.txt");
+  ofstream o("time_base_sobel.txt");
+  ofstream o2("time_base_med.txt");
 // déclaration des variables 
 // Mat structure contenant l'image
   Mat3b frame; // couleur
@@ -60,13 +61,23 @@ int main () {
   //conversion en niveau de gris - librairie OpenCV
     cvtColor(frame, frame_gray, CV_BGR2GRAY);
 
-   // median - librairie OpenCV	
-    medianBlur(frame_gray, frame1, 3);
-
 	timeval time;
 	gettimeofday(&time, NULL);
 	double time1 = time.tv_sec+(time.tv_usec/1000000.0);
 
+
+   // median - librairie OpenCV	
+    medianBlur(frame_gray, frame1, 3);
+
+	gettimeofday(&time, NULL);
+	double time2 = time.tv_sec+(time.tv_usec/1000000.0);
+	o << (time2 - time1) << endl;
+
+
+	timeval new_time;
+	gettimeofday(&new_time, NULL);
+	double time3 = new_time.tv_sec+(new_time.tv_usec/1000000.0);
+	
     // calcul du gradient- librairie OpenCV
     /// Gradient Y
     Sobel( frame1, grad_x, ddepth, 1, 0, 3, scale, delta, BORDER_DEFAULT );
@@ -77,9 +88,10 @@ int main () {
     /// Total Gradient (approximate)
     addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad ); 	
     
-    gettimeofday(&time, NULL);
-	double time2 = time.tv_sec+(time.tv_usec/1000000.0);
-	o << (time2 - time1) << endl;
+    gettimeofday(&new_time, NULL);
+	double time4 = new_time.tv_sec+(new_time.tv_usec/1000000.0);
+	o2 << (time4 - time3) << endl;
+    
 
 	// visualisation
 	// taille d'image réduite pour meuilleure disposition sur écran
