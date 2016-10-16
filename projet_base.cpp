@@ -2,7 +2,7 @@
  * Fichier source pour le projet d'unité
  *  INF-4101C
  *---------------------------------------------------------------------------------------------------
- * Pour compiler : g++ `pkg-config --cflags opencv` projet.cpp `pkg-config --libs opencv` -o projet
+ * Pour compiler : g++ `pkg-config --cflags opencv` projet_base.cpp `pkg-config --libs opencv` -o projet_base
  *---------------------------------------------------------------------------------------------------
  * auteur : Eva Dokladalova 09/2015
  */
