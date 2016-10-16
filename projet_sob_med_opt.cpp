@@ -1,6 +1,6 @@
 /*
  *---------------------------------------------------------------------------------------------------
-* Pour compiler : g++ `pkg-config --cflags opencv` projet_base.cpp `pkg-config --libs opencv` -o projet
+* Pour compiler : g++ `pkg-config --cflags opencv` projet_sob_med_opt.cpp `pkg-config --libs opencv` -o projet_sob_med_
  *---------------------------------------------------------------------------------------------------
  */
  
@@ -17,6 +17,11 @@ using std::cout;
 /*--------------- MAIN FUNCTION ---------------*/
 int main (int argc, char* argv[]) {
 	
+	if(argc <= 1) {
+	cout << "Need number >=3 for median filter" << endl;
+	return 0;
+}
+
 	string s = "time_med_opt_"+string(argv[1])+".txt";
   ofstream o(s.c_str());
   
@@ -101,6 +106,7 @@ int main (int argc, char* argv[]) {
   
   
 /*--------------- FUNCTIONS ---------------*/
+
   
   void sobel_opt(Mat img_in, Mat& img_out, int row, int col) {
 
@@ -119,7 +125,7 @@ int main (int argc, char* argv[]) {
 	
 	
 	for(i = 1; i < n-1; i++) {
-	    for(j = 1; j < m-1; j=j+2) {
+	    for(j = 1; j < m-2; j=j+2) {
 	    
 		NW = img_in.at<uint8>(i-1, j-1);//[i - n - 1];
 		N = img_in.at<uint8>(i-1, j);//[i - n];
@@ -173,21 +179,20 @@ int main (int argc, char* argv[]) {
   		for(int j = 1; j < m-1; j++) {
   			int window [d*d];
   			int k = 0;
-			if(i-(d/2) >= 0 && j-(d/2) >=0 && i+(d/2) <n && j+(d/2) < m){
+			//if(i-(d/2) >= 0 && j-(d/2) >=0 && i+(d/2) <n && j+(d/2) < m){
 				// recupere une fenetre dxd autour de l'element en (i,j)
-				// faire un déroulage de boucle;
+				// faire un déroulage de boucle?
 	  			for(int h = i-(d/2); h <= i+(d/2);h++) {
 	  				for(int l = j-(d/2); l <= j+(d/2);l++) {
-	  					window[k] = img_gray.at<uint8>(h, l);
-						k++;
-						
+						if(h < 0 || h >= n|| j < 0|| j >= m) window[k] = 0;
+						else window[k] = img_gray.at<uint8>(h, l);
+						k++;	
 	  				}
 	  			}
-		  
 				sort(window, d*d, 20); // trie la fenetre (insertion_sort pour 3x3, quicksort pour plus grand
 				img_out.at<uint8>(i, j) = window[4];// recupere le median de la fenetre triee
   			}
-  		}
+  		
   		
   	}
   	
@@ -223,7 +228,6 @@ int main (int argc, char* argv[]) {
   }
   
   
-  //TODO: gérer les bords
   void quicksort(int array[], int start, int end) {
   	if(start < end){
   		int p = part(array, start, end);
