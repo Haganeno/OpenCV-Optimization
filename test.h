@@ -11,7 +11,7 @@
 #include <sys/time.h>
 typedef unsigned char uint8;
 void sobel_opt_thread(cv::Mat img_in, cv::Mat& img_out, int row, int col);
-void sobel_opt(cv::Mat img_in, cv::Mat& img_out, int row_start, int row_end, int col);
+void sobel_opt(uchar* in, uchar* out, int row, int col);
 void median_filter_sort(cv::Mat img_gray, cv::Mat& img_out, int d);
 void sort(int array_in[], int size, int threshold);
 void insertion_sort(int array_in[], int n);
