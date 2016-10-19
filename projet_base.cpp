@@ -78,6 +78,8 @@ int main () {
 	gettimeofday(&new_time, NULL);
 	double time3 = new_time.tv_sec+(new_time.tv_usec/1000000.0);
 	
+	cout << "rows=" <<frame1.rows<<"\tcols="<<frame1.cols<<endl;
+	
     // calcul du gradient- librairie OpenCV
     /// Gradient Y
     Sobel( frame1, grad_x, ddepth, 1, 0, 3, scale, delta, BORDER_DEFAULT );

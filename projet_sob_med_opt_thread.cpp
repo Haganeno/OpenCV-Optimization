@@ -22,13 +22,13 @@ int main (int argc, char* argv[]) {
 	return 0;
 }
 
-	string s = "time_med_opt_"+string(argv[1])+".txt";
+  string s = "time_med_opt_thread"+string(argv[1])+".txt";
   ofstream o(s.c_str());
   
   ofstream o2("time_sobel_opt_thread.txt");
 // déclaration des variables 
 // Mat structure contenant l'image
-  Mat3b frame; // couleur
+   Mat3b frame; // couleur
   Mat frame_gray, frame1; // niveau de gris 
   Mat grad;
 
@@ -39,15 +39,15 @@ int main (int argc, char* argv[]) {
 
   cvNamedWindow("Video in", WINDOW_AUTOSIZE);
   cvNamedWindow("Video gray", WINDOW_AUTOSIZE);
-  cvNamedWindow("Video mediane", WINDOW_AUTOSIZE);
+  cvNamedWindow("Video mediaNW", WINDOW_AUTOSIZE);
   cvNamedWindow("Video contours", WINDOW_AUTOSIZE);
   cvMoveWindow("Video in", 10, 30);
   cvMoveWindow("Video gray", 800, 30);
-  cvMoveWindow("Video mediane", 10, 500);
+  cvMoveWindow("Video mediaNW", 10, 500);
   cvMoveWindow("Video contours", 800, 500);
 
   while(key!='q'){
-  // acquisition d'une image - librairie OpenCV
+  // acquisition d'uNW image - librairie OpenCV
     
     frame = imread("img_proj.jpg", CV_LOAD_IMAGE_COLOR);
     
@@ -66,7 +66,7 @@ int main (int argc, char* argv[]) {
   
 
    // median - librairie OpenCV	
-    median_filter_sort(frame_gray, frame1, atoi(argv[1])); // change median filter sort by opt filter
+    median_filter_sort(frame_gray, frame1, 3); // change median filter sort by opt filter
     
     gettimeofday(&time, NULL);
 	double time2 = time.tv_sec+(time.tv_usec/1000000.0);
@@ -75,15 +75,17 @@ int main (int argc, char* argv[]) {
     
     
     
-    timeval new_time;
-	gettimeofday(&new_time, NULL);
-	double time3 = new_time.tv_sec+(new_time.tv_usec/1000000.0);
-    
+    timeval NWw_time;
+	gettimeofday(&NWw_time, NULL);
+	double time3 = NWw_time.tv_sec+(NWw_time.tv_usec/1000000.0);
+
+
     //Sobel
     sobel_opt_thread(frame1, grad, frame1.rows, frame1.cols);
 
-	gettimeofday(&new_time, NULL);
-	double time4 = new_time.tv_sec+(new_time.tv_usec/1000000.0);
+
+	gettimeofday(&NWw_time, NULL);
+	double time4 = NWw_time.tv_sec+(NWw_time.tv_usec/1000000.0);
 	o2 << (time4 - time3) << endl;
 	
 	
@@ -95,7 +97,7 @@ int main (int argc, char* argv[]) {
     resize(grad, grad, Size(), 0.5, 0.5);
     imshow("Video in",frame);
     imshow("Video gray",frame_gray);
-    imshow("Video mediane",frame1);    
+    imshow("Video mediaNW",frame1);    
     imshow("Video contours",grad);  
     
     
@@ -110,82 +112,62 @@ int main (int argc, char* argv[]) {
 void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 
 
-	/*uchar* in, s1_in, s2_in, s3_in, s4_in;
+	uchar* in;
+	uchar* s1_out;
 	in = img_in.data;
-	s1_in = (uchar*)calloc(*/
-	
-
-	thread sobel_thread1(sobel_opt, img_in, std::ref(img_out), 0, (row/4) - 1, col);
-	//thread sobel_thread2(sobel_opt, img_in, img_out, row/4, row/2 -1, col);
-	thread sobel_thread3(sobel_opt, img_in, std::ref(img_out), row/2, (3*row/4) - 1, col);
-	/*thread sobel_thread4(sobel_opt, img_in, std::ref(img_out), 3*row/4, row, col);*/
+	s1_out = (uchar*)calloc(row*col, sizeof(uchar));
+	thread sobel_thread1(sobel_opt, in, s1_out, row/4, col);
+	thread sobel_thread2(sobel_opt, in+row*col/4, s1_out+row*col/4, row/4, col);
+	thread sobel_thread3(sobel_opt, in+row*col/2, s1_out+row*col/2, row/4, col);
+	thread sobel_thread4(sobel_opt, in +3*(row*col)/4, s1_out+3*row*col/4, row/4, col);
 	sobel_thread1.join();
-	//sobel_thread2.join();
+	sobel_thread2.join();
 	sobel_thread3.join();
-	/*sobel_thread4.join();*/
+	sobel_thread4.join();
+	img_out = Mat(row, col, CV_8UC1, s1_out);
+	
 
 }
   
-  void sobel_opt(Mat img_in, Mat& img_out, int row_start, int row_end, int col) {
+  // On utilise maintenant des uchar* et pas des Mat pour faciliter la partion
+  // en 4 de l'image
+  void sobel_opt(uchar* im_in, uchar* im_out, int rw, int cl) {
+	
+	int i = 0;
+	uchar *NW, *N, *NE, *W, *E, *SW, *S, *SE, *W2, *NE2, *SE2, *E2;
+	int Gx, Gy, Gx2, Gy2;
 
-	int n;
-	int m;
-	n = row_end;
-	m = col;
-	
-	img_in.copyTo(img_out);
-	
-	uint8 N, NE, NW, S, SE, SW, W, E, W2, NE2, SE2, E2;
-	int gx, gy;
-	int gx2, gy2;
-	
-	int i, j;
-	
-	//TODO: jouer avec les options d'opt de G++ (fonction at<>() optimisable par le compilateur)
-	
-	for(i = row_start; i < n; i++) {
-	    for(j = 0; j < m; j=j+2) {
-		if(i == 0 || j == 0 || j == m-2) {
-			img_out.at<uint8>(i,j) = 0;		
-			img_out.at<uint8>(i,j+1) = 0;
+	for (i = 0,
+		NW = im_in - cl - 1, N = im_in - cl, NE = im_in - cl + 1,
+		W = im_in - 1, E = im_in + 1, SW = im_in + cl - 1,
+		S = im_in + cl, SE = im_in + cl + 1, W2 = im_in,
+		NE2 = im_in - cl + 2, SE2 = im_in + cl + 2, E2 = im_in + 2;
+	i < (cl*rw)-1;
+	i=i+2, NW=NW+2, N=N+2, NE=NE+2, W=W+2, E=E+2, SW=SW+2, S=S+2, SE=SE+2, W2=W2+2, NE2=NE2+2, SE2=SE2+2, E2=E2+2
+		)
+	{
+		if (i < cl || i%cl == 0 || i%cl == cl - 2 || i >= (cl - 2)*rw) {    //cas où le pixel est sur un bord   
+			im_out[i] = 0;
 		}
-		else {
-			NW = img_in.at<uint8>(i-1, j-1);//[i - n - 1];
-			N = img_in.at<uint8>(i-1, j);//[i - n];
-			NE = img_in.at<uint8>(i-1,j+1);//[i - n + 1];
-			NE2 = img_in.at<uint8>(i-1,j+2);//[i - n + 2];
-			W = img_in.at<uint8>(i,j-1);//[i - 1];
-			W2 = img_in.at<uint8>(i,j);//[i];
-			E = img_in.at<uint8>(i,j+1);//[i + 1];
-			E2 = img_in.at<uint8>(i,j+2);//[i + 2];
-		
-		
-			SW = img_in.at<uint8>(i+1,j-1);//[i + n - 1];
-			S = img_in.at<uint8>(i+1,j);//[i + n];
-			SE = img_in.at<uint8>(i+1,j+1);//[i + n + 1];
-			SE2 = img_in.at<uint8>(i+1,j+2);//[i + n + 2];
-			 
-		
-			gx = abs(NE + (E<<1) + SE - NW - (W<<1) - SW);
-			gy = abs(NW + (N<<1) + NE - SW - (S<<1) - SE);
-				
-			img_out.at<uint8>(i,j) = (gx + gy)>>1;
-		
-		  
-			gx2 = abs(NE2 + (E2<<1) + SE2 - N - (W2<<1) - S);
-			gy2 = abs(N + (NE<<1) + NE2 - S - (SE<<1) - SE2);
+		else{
+			Gx = abs(-(*NW) - (*W<<1) - (*SW) + (*NE) + (*E<<1) + (*SE));
+			Gy = abs(-(*NW) - (*N<<1) - (*NE) + (*SW) + (*S<<1) + (*SE));
+			
+			Gx2 = abs(-(*N) - (*W2<<1) - (*SW) + (*NE2) + (*E2<<1) + (*SE2));
+			Gy2 = abs(-(*N) - (*NE<<1) - (*NE2) + (*SW) + (*SE<<1) + (*SE2));
+			
+			im_out[i] = (uchar)((Gx + Gy)>>1);
+			im_out[i+1] = (uchar)((Gx2 + Gy2)>>1);
 		}
-		
-		img_out.at<uint8>(i,j+1) = (gx2 + gy2)>>1;
 	}
 	}
 	
-}
+
 
 
 
 // filtre median avec trie (non opt)
- // r indique le diam?tre du filtre ? utiliser (doit ?tre impair et >=3)
+ // r indique le diam?tre du filtre ? utiliser (doit ?tre SWair et >=3)
   void median_filter_sort(Mat img_gray, Mat& img_out, int d) {
   
   	if(d%2 == 0 || d < 3){
@@ -203,7 +185,7 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
   			int window [d*d];
   			int k = 0;
 			//if(i-(d/2) >= 0 && j-(d/2) >=0 && i+(d/2) <n && j+(d/2) < m){
-				// recupere une fenetre dxd autour de l'element en (i,j)
+				// recupere une feNWtre dxd autour de l'element en (i,j)
 				// faire un déroulage de boucle?
 	  			for(int h = i-(d/2); h <= i+(d/2);h++) {
 	  				for(int l = j-(d/2); l <= j+(d/2);l++) {
@@ -212,8 +194,8 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 						k++;	
 	  				}
 	  			}  
-				sort(window, d*d, 20); // trie la fenetre (insertion_sort pour 3x3, quicksort pour plus grand
-				img_out.at<uint8>(i, j) = window[4];// recupere le median de la fenetre triee
+				sort(window, d*d, 20); // trie la feNWtre (insertion_sort pour 3x3, quicksort pour plus grand
+				img_out.at<uint8>(i, j) = window[4];// recupere le median de la feNWtre triee
   			}
   		
   		
@@ -223,7 +205,7 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 
 
 
-// Impl?mente le tri rapide pour le filtre median ? grand rayon (>20)
+// SWl?mente le tri rapide pour le filtre median ? grand rayon (>20)
   // Sinon, utilise le tri par insertion pour les petits tableaux(<=20):
   // Insertion sort est un algo de tri quadratique en g?n?ral
   // mais tr?s rapide quand le tableau ? trier est petit
@@ -260,7 +242,7 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
   }
   
   
-  // inspiré de algolist.net/Algorithms/Sorting/Quicksort
+  // inspiré de algolist.NWt/Algorithms/Sorting/Quicksort
   int part(int array[], int s, int e) {
   	int i = s, j = e;
   	int tmp;
