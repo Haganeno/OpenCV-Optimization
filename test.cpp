@@ -19,13 +19,13 @@ int main () {
 	
 
 
-	string s = "time_med_opt_3.txt";
+	string s = "time_med_test.txt";
   ofstream o(s.c_str());
   
-  ofstream o2("time_sobel_opt_thread.txt");
+  ofstream o2("time_sobel_test.txt");
 // déclaration des variables 
 // Mat structure contenant l'image
-  Mat3b frame; // couleur
+   Mat3b frame; // couleur
   Mat frame_gray, frame1; // niveau de gris 
   Mat grad;
 
@@ -79,6 +79,7 @@ int main () {
     //Sobel
     sobel_opt_thread(frame1, grad, frame1.rows, frame1.cols);
 
+
 	gettimeofday(&NWw_time, NULL);
 	double time4 = NWw_time.tv_sec+(NWw_time.tv_usec/1000000.0);
 	o2 << (time4 - time3) << endl;
@@ -125,7 +126,7 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 }
   
   void sobel_opt(uchar* im_in, uchar* im_out, int rw, int cl) {
-	//TODO: améliorer le code et déroulage de boucle?
+	
 	int i = 0;
 	uchar *NW, *N, *NE, *W, *E, *SW, *S, *SE, *W2, *NE2, *SE2, *E2;
 	int Gx, Gy, Gx2, Gy2;
@@ -178,7 +179,7 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
   			int window [d*d];
   			int k = 0;
 			//if(i-(d/2) >= 0 && j-(d/2) >=0 && i+(d/2) <n && j+(d/2) < m){
-				// recupere uNW feNWtre dxd autour de l'element en (i,j)
+				// recupere une feNWtre dxd autour de l'element en (i,j)
 				// faire un déroulage de boucle?
 	  			for(int h = i-(d/2); h <= i+(d/2);h++) {
 	  				for(int l = j-(d/2); l <= j+(d/2);l++) {
