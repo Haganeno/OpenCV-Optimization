@@ -9,7 +9,7 @@
  
 #include <fstream>
 #include <stdlib.h>
-
+#include <stdint.h>
 /* Libraries OPENCV */
 #include "highgui.h"
 #include "cv.h"
@@ -22,10 +22,14 @@ using namespace std;
 using namespace cv;
 using std::cout;
 /*--------------- MAIN FUNCTION ---------------*/
-int main () {
-
-  ofstream o("time_base_sobel.txt");
-  ofstream o2("time_base_med.txt");
+int main (int argc, char* argv[]) {
+if(argc <= 1) {
+	cout << "Need number >=3 for median filter" << endl;
+	return 0;
+}
+  ofstream o("time_base_med_.txt");
+  ofstream o2("time_base_sobel_.txt");
+  
 // déclaration des variables 
 // Mat structure contenant l'image
   Mat3b frame; // couleur
@@ -46,8 +50,8 @@ int main () {
   cvMoveWindow("Video gray", 800, 30);
   cvMoveWindow("Video mediane", 10, 500);
   cvMoveWindow("Video contours", 800, 500);
-  
-  while(key!='q'){
+  int i = 0;
+  while(key!='q' || i <55){
  // acquisition d'une image - librairie OpenCV
     
     frame = imread("img_proj.jpg", CV_LOAD_IMAGE_COLOR);
@@ -67,7 +71,7 @@ int main () {
 
 
    // median - librairie OpenCV	
-    medianBlur(frame_gray, frame1, 3);
+    medianBlur(frame_gray, frame1, atoi(argv[1]));
 
 	gettimeofday(&time, NULL);
 	double time2 = time.tv_sec+(time.tv_usec/1000000.0);
@@ -78,7 +82,6 @@ int main () {
 	gettimeofday(&new_time, NULL);
 	double time3 = new_time.tv_sec+(new_time.tv_usec/1000000.0);
 	
-	cout << "rows=" <<frame1.rows<<"\tcols="<<frame1.cols<<endl;
 	
     // calcul du gradient- librairie OpenCV
     /// Gradient Y
@@ -106,7 +109,7 @@ int main () {
     imshow("Video mediane",frame1);    
     imshow("Video contours",grad);  
     
-    
+    i++;
     key=waitKey(5);
   }
 }

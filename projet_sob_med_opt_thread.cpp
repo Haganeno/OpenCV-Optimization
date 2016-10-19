@@ -68,6 +68,7 @@ int main (int argc, char* argv[]) {
    // median - librairie OpenCV	
     median_filter_sort(frame_gray, frame1, 3); // change median filter sort by opt filter
     
+
     gettimeofday(&time, NULL);
 	double time2 = time.tv_sec+(time.tv_usec/1000000.0);
 	o << (time2 - time1) << endl;
@@ -100,7 +101,7 @@ int main (int argc, char* argv[]) {
     imshow("Video mediaNW",frame1);    
     imshow("Video contours",grad);  
     
-    
+
     key=waitKey(5);
   }
   }

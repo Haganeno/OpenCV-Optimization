@@ -98,8 +98,7 @@ int main (int argc, char* argv[]) {
     imshow("Video gray",frame_gray);
     imshow("Video mediane",frame1);    
     imshow("Video contours",grad);  
-    
-    
+
     key=waitKey(5);
   }
   }
@@ -107,8 +106,52 @@ int main (int argc, char* argv[]) {
   
 /*--------------- FUNCTIONS ---------------*/
 
+
+
+
+// On utilise maintenant des uchar* et pas des Mat pour faciliter la partion
+  // en 4 de l'image
+  void sobel_opt(Mat in, Mat& out, int rw, int cl) {
+	
+	uchar* im_in = in.data;
+	uchar* im_out = (uchar*)calloc(rw*cl, sizeof(uchar));
+
+	int i = 0;
+	uchar *NW, *N, *NE, *W, *E, *SW, *S, *SE, *W2, *NE2, *SE2, *E2;
+	int Gx, Gy, Gx2, Gy2;
+
+	for (i = 0,
+		NW = im_in - cl - 1, N = im_in - cl, NE = im_in - cl + 1,
+		W = im_in - 1, E = im_in + 1, SW = im_in + cl - 1,
+		S = im_in + cl, SE = im_in + cl + 1, W2 = im_in,
+		NE2 = im_in - cl + 2, SE2 = im_in + cl + 2, E2 = im_in + 2;
+	i < (cl*rw)-1;
+	i=i+2, NW=NW+2, N=N+2, NE=NE+2, W=W+2, E=E+2, SW=SW+2, S=S+2, SE=SE+2, W2=W2+2, NE2=NE2+2, SE2=SE2+2, E2=E2+2
+		)
+	{
+		if (i < cl || i%cl == 0 || i%cl == cl - 2 || i >= (cl - 2)*rw) {    //cas où le pixel est sur un bord   
+			im_out[i] = 0;
+		}
+		else{
+			Gx = abs(-(*NW) - (*W<<1) - (*SW) + (*NE) + (*E<<1) + (*SE));
+			Gy = abs(-(*NW) - (*N<<1) - (*NE) + (*SW) + (*S<<1) + (*SE));
+			
+			Gx2 = abs(-(*N) - (*W2<<1) - (*SW) + (*NE2) + (*E2<<1) + (*SE2));
+			Gy2 = abs(-(*N) - (*NE<<1) - (*NE2) + (*SW) + (*SE<<1) + (*SE2));
+			
+			im_out[i] = (uchar)((Gx + Gy)>>1);
+			im_out[i+1] = (uchar)((Gx2 + Gy2)>>1);
+		}
+	}
+
+	out = Mat(rw, cl, CV_8UC1, im_out);
+}
+
+
+
+
   
-  void sobel_opt(Mat img_in, Mat& img_out, int row, int col) {
+  /*void sobel_opt(Mat img_in, Mat& img_out, int row, int col) {
 
 	int n;
 	int m;
@@ -157,7 +200,7 @@ int main (int argc, char* argv[]) {
 	}
 	}
 	
-}
+}*/
 
 
 

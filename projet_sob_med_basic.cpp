@@ -44,8 +44,7 @@ if(argc <= 1) {
   cvMoveWindow("Video mediane", 10, 500);
   cvMoveWindow("Video contours", 800, 500);
   
-  
-	
+
   while(key!='q'){
   // acquisition d'une image - librairie OpenCV
     
@@ -68,6 +67,7 @@ if(argc <= 1) {
 
    // median - librairie OpenCV	
     median_filter_sort(frame_gray, frame1, atoi(argv[1]));
+
     
     gettimeofday(&time, NULL);
 	double time2 = time.tv_sec+(time.tv_usec/1000000.0);
