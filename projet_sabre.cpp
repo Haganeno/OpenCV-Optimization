@@ -23,8 +23,8 @@ int main (int argc, char* argv[]) {
 	return 0;
 	}
 	
+	// Handles parameters
 	string s, s2;
-
 	switch(stoi(argv[1])) {
 		case 1: //opencv
 			s = "time_med_opencv_"+string(argv[2])+".txt";
@@ -35,8 +35,11 @@ int main (int argc, char* argv[]) {
 		case 3: //opt
 			s = "time_med_opt_"+string(argv[2])+".txt";
 			break;
-		case 4: //thread
-			s = "time_med_thread_"+string(argv[2])+".txt";
+		case 4: //constant time
+			s = "time_med_const_"+string(argv[2])+".txt";
+			break;
+		case 5: //thread
+			s = "time_med_const_thread_"+string(argv[2])+".txt";
 			break;
 		default:
 			break; 
@@ -77,11 +80,11 @@ int main (int argc, char* argv[]) {
 
   cvNamedWindow("Video in", WINDOW_AUTOSIZE);
   cvNamedWindow("Video gray", WINDOW_AUTOSIZE);
-  cvNamedWindow("Video mediaNW", WINDOW_AUTOSIZE);
+  cvNamedWindow("Video mediane", WINDOW_AUTOSIZE);
   cvNamedWindow("Video contours", WINDOW_AUTOSIZE);
   cvMoveWindow("Video in", 10, 30);
   cvMoveWindow("Video gray", 800, 30);
-  cvMoveWindow("Video mediaNW", 10, 500);
+  cvMoveWindow("Video mediane", 10, 500);
   cvMoveWindow("Video contours", 800, 500);
 
   while(key!='q'){
@@ -112,11 +115,23 @@ int main (int argc, char* argv[]) {
 		case 2: //basic (sort)
 			median_basic(frame_gray, frame1, atoi(argv[2])); 
 			break;
-		case 3: //opt
+		case 3: { //opt
+			uchar* med_out = (uchar*)calloc(frame_gray.rows*frame_gray.cols, sizeof(uchar));
+			median_hist(frame_gray.data, med_out, atoi(argv[2]), frame_gray.rows, frame_gray.cols);
+			frame1 = Mat(frame_gray.rows, frame_gray.cols, CV_8UC1, med_out);
 			break;
-		case 4: //thread
+			}
+		case 4: { //constant time
+			uchar* m_out = (uchar*)calloc(frame_gray.rows*frame_gray.cols, sizeof(uchar));
+			median_hist_const(frame_gray.data,m_out, atoi(argv[2]), frame_gray.rows, frame_gray.cols);
+			frame1 = Mat(frame_gray.rows, frame_gray.cols, CV_8UC1, m_out);
+			break;
+			}
+		case 5: //thread
+			median_hist_thread(frame_gray, frame1, atoi(argv[2]), frame_gray.rows, frame_gray.cols);
 			break;
 		default:
+			median_hist_thread(frame_gray, frame1, atoi(argv[2]), frame_gray.rows, frame_gray.cols);
 			break; 
     }
     
@@ -174,7 +189,7 @@ int main (int argc, char* argv[]) {
     resize(grad, grad, Size(), 0.5, 0.5);
     imshow("Video in",frame);
     imshow("Video gray",frame_gray);
-    imshow("Video mediaNW",frame1);    
+    imshow("Video mediane",frame1);    
     imshow("Video contours",grad);  
     
 
@@ -284,6 +299,93 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 	}
 		
 }
+
+	void median_hist_thread(Mat img_in, Mat& img_out, int d, int row, int col) {	
+	
+		uchar* in = img_in.data;
+		uchar* out = (uchar*)calloc(row*col, sizeof(uchar));
+		
+		thread sobel_thread1(median_hist_const, in, out, d, row/4, col);
+		thread sobel_thread2(median_hist_const, in+row*col/4, out+row*col/4, d, row/4, col);
+		thread sobel_thread3(median_hist_const, in+row*col/2, out+row*col/2-1, d, row/4, col);
+		thread sobel_thread4(median_hist_const, in+3*(row*col)/4, out+3*row*col/4, d, row/4, col);
+		sobel_thread1.join();
+		sobel_thread2.join();
+		sobel_thread3.join();
+		sobel_thread4.join();
+		
+		img_out = Mat(row, col, CV_8UC1, out);
+	}
+	
+	
+	void median_hist_const(uchar* img_in, uchar* img_out, int d, int row, int col) {
+		
+		int r = d/2;
+		int hist[256];
+		for(int i = 0; i < col * row; i++) {
+			if(i%col == r) { // i sur la Nième colonne
+				for (int j = 0; j <= 255; j++) { // (re)initialise l'histogramme
+					hist[j] = 0;
+				}
+				for(int k = 0; k < d; k++) {
+					for(int l = 0; l < d; l++) { //remplissage histogramme
+						hist[int(img_in[i - r*col - r + l + k*col])]++;
+					}
+				}
+			}
+			
+			else if (i > col*r || i%col > r || i%col < col - r || i < (col - r - 1)*row) { // i dans la zone de calcul du median (pas sur les bords)
+				for(int f = 0; f < d; f++) {
+					hist[int(img_in[i - r*col - (r + 1) + f*col])]--;
+					hist[int(img_in[i - r*col + r + f*col])]++;
+				}
+			}
+			
+			if (i < col*r || i%col < r || i%col > col - r || i >= (col - r)*row) { // bords, on ne peut calculer le median
+				img_out[i] = (int)img_in[i];
+			}
+			else {
+		
+				int med = 0, m = 0;
+				while(med < d*d/2) {
+					med += hist[m];
+					m++;
+				}
+				
+				img_out[i] = m;
+				
+			}
+	}
+}
+
+	void median_hist(uchar* img_in, uchar* img_out, int d, int row, int col) {
+	
+		int r = d/2;
+		int hist[256];
+		for(int i = 0; i < col * row; i++) {
+			if (i%col == 0 || i%col == col - 1 || i >= (col - 1)*row)    // bords
+				img_out[i] = 0;
+			else {
+				for(int j = 0; j <= 255; j++) { // (re)initialise l'histogramme
+					hist[j] = 0;
+				}
+				
+				for(int k = 0; k < d; k++) { // remplit l'histogramme
+					for(int l = 0; l < d; l++) {
+						hist[int(img_in[i - r*col - r + l + k*col])]++;
+					}
+				}
+				
+				int med = 0, m = 0;
+				while(med < d*d/2) {
+					med += hist[m];
+					m++;
+				}
+				
+				img_out[i] = m;
+			}
+		}
+	}
 
 
 // filtre median avec trie (non opt)
