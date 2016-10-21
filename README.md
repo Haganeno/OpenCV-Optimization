@@ -13,7 +13,7 @@ To run the program use the command `./executable_name param1 param2 param3`, her
 
 Three paramaters are needeed : 
 
-    - param1 : the median filter type (takes an Integer between 1 and 5)
+    - param1 : the median filter type (takes an Integer between 1 and 4)
     
     - param2 : the median window's diameter (takes an Integer superior or equal to 3)
     
@@ -27,9 +27,8 @@ The 5 median filters types are :
     
     - Type 3 : Huang's linear median filter
     
-    - Type 4 : Median filter in constant time
+    - Type 4 : Multithreaded linear median filter
     
-    - Type 5 : Multithreaded median filter in constant time
     
 The 4 Sobel filters types are :
     

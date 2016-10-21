@@ -18,7 +18,6 @@ void sobel_basic(cv::Mat frame1, cv::Mat& grad, int rows, int cols);
 void median_basic(cv::Mat img_gray, cv::Mat& img_out, int d);
 void median_hist(uchar* img_in, uchar* img_out, int d, int row, int col);
 void median_hist_thread(cv::Mat img_in, cv::Mat& img_out, int d, int row, int col);
-void median_hist_const(uchar* img_in, uchar* img_out, int d, int row, int col);
 void sort(int array_in[], int size, int threshold);
 void insertion_sort(int array_in[], int n);
 void quicksort(int array_in[], int start, int end);
