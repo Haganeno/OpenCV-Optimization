@@ -17,7 +17,11 @@ using std::cout;
 /*--------------- MAIN FUNCTION ---------------*/
 int main (int argc, char* argv[]) {
 	
-	
+	VideoCapture cap(0);
+	if (!cap.isOpened()) {
+		cout << "Error";
+		return -1;
+	}
 	if(argc <= 3) {
 	cout << "Need to specify sobel and median filter type"<<endl<<"Need number >=3 for median filter" 		<< endl << "See README for instructions on how to execute with appropriate parameters"<<endl;
 	return 0;
@@ -87,7 +91,9 @@ int main (int argc, char* argv[]) {
   while(key!='q'){
   // acquisition d'une image - librairie OpenCV
     
-    frame = imread("img_proj.jpg", CV_LOAD_IMAGE_COLOR);
+    cap.read(frame);
+    /*pour filtrer seulement une image
+    frame = imread("img_proj.jpg", CV_LOAD_IMAGE_COLOR);*/
     
     if(! frame.data )                              // Check for invalid input
     {
@@ -216,34 +222,48 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
   // Sobel optimisé
   // On utilise maintenant des uchar* et pas des Mat pour faciliter la partion
   // en 4 de l'image
-  void sobel_opt(uchar* im_in, uchar* im_out, int rw, int cl) {
+  void sobel_opt(uchar* img_in, uchar* img_out, int row, int col) {
 	
-	int i = 0;
-	uchar *NW, *N, *NE, *W, *E, *SW, *S, *SE, *W2, *NE2, *SE2, *E2;
-	int Gx, Gy, Gx2, Gy2;
-
-	for (i = 0,
-		NW = im_in - cl - 1, N = im_in - cl, NE = im_in - cl + 1,
-		W = im_in - 1, E = im_in + 1, SW = im_in + cl - 1,
-		S = im_in + cl, SE = im_in + cl + 1, W2 = im_in,
-		NE2 = im_in - cl + 2, SE2 = im_in + cl + 2, E2 = im_in + 2;
-	i < (cl*rw)-1;
-	i=i+2, NW=NW+2, N=N+2, NE=NE+2, W=W+2, E=E+2, SW=SW+2, S=S+2, SE=SE+2, W2=W2+2, NE2=NE2+2, SE2=SE2+2, E2=E2+2
-		)
+	
+	int NW, N, NE, W, E, SW, S, SE, W2, NE2, SE2, E2;
+	int gx, gy, gx2, gy2;
+	
+	for (int i = 0; i < row; i++)
 	{
-		if (i < cl || i%cl == 0 || i%cl == cl - 2 || i >= (cl - 2)*rw) { //cas où le pixel est sur un bord   
-			im_out[i] = 0;
-		}
-		else{
-			Gx = abs(-(*NW) - (*W<<1) - (*SW) + (*NE) + (*E<<1) + (*SE));
-			Gy = abs(-(*NW) - (*N<<1) - (*NE) + (*SW) + (*S<<1) + (*SE));
+		for(int j = 0; j < col; j++) {
+			/*if(j < 1 || j >= col - 1 || i < 1|| i >= row - 1) { //cas où le pixel est sur un bord   
+				img_out[i*col + j] = img_in[i*col +j];
+			}
+			else{*/
 			
-			Gx2 = abs(-(*N) - (*W2<<1) - (*SW) + (*NE2) + (*E2<<1) + (*SE2));
-			Gy2 = abs(-(*N) - (*NE<<1) - (*NE2) + (*SW) + (*SE<<1) + (*SE2));
+			NW = img_in[i*col + j - col - 1];
+			N = img_in[i*col + j - col];
+			NE = img_in[i*col + j - col + 1];
+			NE2 = img_in[i*col + j - col + 2];
 			
-			im_out[i] = (uchar)((Gx + Gy)>>1);
-			im_out[i+1] = (uchar)((Gx2 + Gy2)>>1);
-		}
+			W = img_in[i*col + j - 1];
+			W2 = img_in[i*col + j];
+			E = img_in[i*col + j + 1];
+			E2 = img_in[i*col + j + 2];
+			
+			
+			SW = img_in[i*col + j + col - 1];
+			S = img_in[i*col + j + col];
+			SE = img_in[i*col + j + col + 1];
+			SE2 = img_in[i*col + j + col + 2];
+				
+				
+			gx = abs(NE + (E<<1) + SE - NW - (W<<1) - SW);
+			gy = abs(NW + (N<<1) + NE - SW - (S<<1) - SE);
+			
+			gx2 = abs(NE2 + (E2<<1) + SE2 - N - (W2<<1) - S);
+			gy2 = abs(N + (NE<<1) + NE2 - S - (SE<<1) - SE2);				
+			
+			
+			img_out[i*col + j] = (uchar)((gx + gy)>>1);
+			img_out[i*col + j + 1] = (uchar)((gx2 + gy2)>>1);
+			//}
+	}
 	}
 
 }
@@ -298,7 +318,7 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 		
 		thread sobel_thread1(median_hist, in, out, d, row/4, col);
 		thread sobel_thread2(median_hist, in+row*col/4, out+row*col/4, d, row/4, col);
-		thread sobel_thread3(median_hist, in+row*col/2, out+row*col/2-1, d, row/4, col);
+		thread sobel_thread3(median_hist, in+row*col/2, out+row*col/2, d, row/4, col);
 		thread sobel_thread4(median_hist, in+3*(row*col)/4, out+3*row*col/4, d, row/4, col);
 		sobel_thread1.join();
 		sobel_thread2.join();
@@ -313,27 +333,28 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 	
 		int r = d/2;
 		int hist[256];
-		for(int i = 0; i < col * row; i++) {
-			if (i-r < col || i%col == col - r || i >= (col-r)*row) // bords
-				img_out[i] = 0;
-			else {
-				for(int j = 0; j <= 255; j++) { // (re)initialise l'histogramme
-					hist[j] = 0;
-				}
-				/*cout<<"i="<<i<<endl;
-				cout<<"hist="<<hist[int(img_in[561228 - r*col - r + d-1 + (d-1)*col])]<<endl;*/
-				for(int k = 0; k != d; k++) { // remplit l'histogramme
-					for(int l = 0; l != d; l++) {
-						hist[int(img_in[i - r*col - r + l + k*col])]++;
+		for(int i = 0; i < row; i++) {
+			for(int j = 0; j < col; j++) {
+				if(j < r || j >= col - r || i < r|| i >= row - r) // bords
+					img_out[i*col + j] = img_in[i*col+j];
+				else {
+					for(int p = 0; p <= 255; p++) { // (re)initialise l'histogramme
+						hist[p] = 0;
 					}
-				}
-				int med = 0, m = 0;
-				while(med < d*d/2) {
-					med += hist[m];
-					m++;
-				}
 
-				img_out[i] = m;
+					for(int k = 0; k != d; k++) { // remplit l'histogramme
+						for(int l = 0; l != d; l++) {
+							hist[int(img_in[i*col + j - r*col - r + l + k*col])]++;//i - r*col - r + l + k*col])]++;
+						}
+					}
+					int med = 0, m = 0;
+					while(med < d*d/2) {
+						med += hist[m];
+						m++;
+					}
+
+					img_out[i*col + j] = m;
+				}
 			}
 		}
 	}
