@@ -337,9 +337,9 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 		int hist[256];
 		for(int i = 0; i < row; i++) {
 			for(int j = 0; j < col; j++) {
-				if(j < r || j >= col - r || i < r|| i >= row - r) // bords
+				/*if(j < r || j >= col - r || i < r|| i >= row - r) // bords
 					img_out[i*col + j] = img_in[i*col+j];
-				else {
+				else {*/
 					for(int p = 0; p <= 255; p++) { // (re)initialise l'histogramme
 						hist[p] = 0;
 					}
@@ -356,7 +356,7 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 					}
 
 					img_out[i*col + j] = m;
-				}
+				
 			}
 		}
 	}
