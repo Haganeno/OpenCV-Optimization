@@ -17,14 +17,16 @@ using std::cout;
 /*--------------- MAIN FUNCTION ---------------*/
 int main (int argc, char* argv[]) {
 	
+	
+	if(argc <= 3) {
+	cout << "Need to specify sobel and median filter type"<<endl<<"Need number >=3 for median filter" 		<< endl << "See README for instructions on how to execute with appropriate parameters"<<endl;
+	return 0;
+	}
+	
 	VideoCapture cap(0);
 	if (!cap.isOpened()) {
 		cout << "Error";
 		return -1;
-	}
-	if(argc <= 3) {
-	cout << "Need to specify sobel and median filter type"<<endl<<"Need number >=3 for median filter" 		<< endl << "See README for instructions on how to execute with appropriate parameters"<<endl;
-	return 0;
 	}
 	
 	// Handles parameters
