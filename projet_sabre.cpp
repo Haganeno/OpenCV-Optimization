@@ -18,9 +18,16 @@ using std::cout;
 int main (int argc, char* argv[]) {
 	
 	
+	
 	if(argc <= 3) {
 	cout << "Need to specify sobel and median filter type"<<endl<<"Need number >=3 for median filter" 		<< endl << "See README for instructions on how to execute with appropriate parameters"<<endl;
 	return 0;
+	}
+	
+	VideoCapture cap(0);
+	if (!cap.isOpened()) {
+		cout << "Error";
+		return -1;
 	}
 	
 	// Handles parameters
@@ -87,7 +94,9 @@ int main (int argc, char* argv[]) {
   while(key!='q'){
   // acquisition d'une image - librairie OpenCV
     
-    frame = imread("img_proj.jpg", CV_LOAD_IMAGE_COLOR);
+     cap.read(frame);
+    /*pour filtrer seulement une image
+    frame = imread("img_proj.jpg", CV_LOAD_IMAGE_COLOR);*/
     
     if(! frame.data )                              // Check for invalid input
     {
