@@ -19,6 +19,8 @@ Three paramaters are needeed :
     
     - param3 : the sobel filter type (takes an Integer between 1 and 4)
     
+    - param4 : the threshold value
+    
 The 5 median filters types are :
     
     - Type 1 : OpenCV's own median filter
@@ -43,5 +45,5 @@ The 4 Sobel filters types are :
 
 Example :
 
-    To run the program with OpenCV's own median filter (type 1) and the optimized multithreaded Sobel filter (type 4) with a median window diameter of 5 (5x5 window), the command to use is : `./projet_sabre 1 5 4`.
+    To run the program with OpenCV's own median filter (type 1) and the optimized multithreaded Sobel filter (type 4) with a median window diameter of 5 (5x5 window) and a threshold value of 50, the command to use is : `./projet_sabre 1 5 4 50`.
 
