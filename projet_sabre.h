@@ -23,3 +23,4 @@ void insertion_sort(int array_in[], int n);
 void quicksort(int array_in[], int start, int end);
 int part(int array[], int s, int e);
 void swap(int array[], int i, int j);
+void threshold(cv::Mat in, cv::Mat& ou, int rows, int cols, int s);

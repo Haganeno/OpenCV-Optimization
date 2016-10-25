@@ -18,8 +18,8 @@ using std::cout;
 int main (int argc, char* argv[]) {
 	
 	
-	if(argc <= 3) {
-	cout << "Need to specify sobel and median filter type"<<endl<<"Need number >=3 for median filter" 		<< endl << "See README for instructions on how to execute with appropriate parameters"<<endl;
+	if(argc <= 4) {
+	cout << "Need to specify sobel and median filter type"<<endl<<"Need number >=3 for median filter" 		<< endl <<"Need threshold value"<<endl<< "See README for instructions on how to execute with appropriate parameters"<<endl;
 	return 0;
 	}
 	
@@ -75,21 +75,23 @@ int main (int argc, char* argv[]) {
   Mat frame_gray, frame1; // niveau de gris 
   Mat grad_x, grad_y;
   Mat abs_grad_y, abs_grad_x, grad;
-
+	Mat final_image;
   int ddepth = CV_16S;
   int scale = 1;
   int delta = 0;	
   char key = '0';
 
-  cvNamedWindow("Video in", WINDOW_AUTOSIZE);
+  
   cvNamedWindow("Video gray", WINDOW_AUTOSIZE);
   cvNamedWindow("Video mediane", WINDOW_AUTOSIZE);
   cvNamedWindow("Video contours", WINDOW_AUTOSIZE);
-  cvMoveWindow("Video in", 10, 30);
-  cvMoveWindow("Video gray", 800, 30);
-  cvMoveWindow("Video mediane", 10, 500);
-  cvMoveWindow("Video contours", 800, 500);
-
+  cvNamedWindow("Image Finale", WINDOW_AUTOSIZE);
+ 
+  cvMoveWindow("Video gray", 10 , 30);
+  cvMoveWindow("Video mediane",800 , 30);
+  cvMoveWindow("Video contours",10 , 500);
+   cvMoveWindow("Image Finale", 800, 500);
+   
   while(key!='q'){
   // acquisition d'une image - librairie OpenCV
     
@@ -110,8 +112,9 @@ int main (int argc, char* argv[]) {
 	timeval time;
     gettimeofday(&time, NULL);
   	double time1 = time.tv_sec+(time.tv_usec/1000000.0);
-  
-
+	
+	uchar* med_out = (uchar*)malloc(frame_gray.rows*frame_gray.cols*sizeof(uchar));
+	
    // median
 	switch(stoi(argv[1])) {
 		case 1: //opencv
@@ -121,7 +124,7 @@ int main (int argc, char* argv[]) {
 			median_basic(frame_gray, frame1, atoi(argv[2])); 
 			break;
 		case 3: { //opt
-			uchar* med_out = (uchar*)calloc(frame_gray.rows*frame_gray.cols, sizeof(uchar));
+			
 			median_hist(frame_gray.data, med_out, atoi(argv[2]), frame_gray.rows, frame_gray.cols);
 			frame1 = Mat(frame_gray.rows, frame_gray.cols, CV_8UC1, med_out);
 			break;
@@ -146,6 +149,7 @@ int main (int argc, char* argv[]) {
 	gettimeofday(&new_time, NULL);
 	double time3 = new_time.tv_sec+(new_time.tv_usec/1000000.0);
 
+	uchar* out = (uchar*)malloc(frame_gray.rows*frame_gray.cols*sizeof(uchar));
 
     //Sobel
     switch(stoi(argv[3])) {
@@ -160,7 +164,7 @@ int main (int argc, char* argv[]) {
 			sobel_basic(frame1, grad, frame1.rows, frame1.cols);
 			break;
 		case 3: {	//opt
-			uchar* out = (uchar*)calloc(frame1.rows*frame1.cols, sizeof(uchar));
+			
 			sobel_opt(frame1.data, out, frame1.rows, frame1.cols);
 			grad = Mat(frame1.rows, frame1.cols, CV_8UC1, out);
 			break;
@@ -173,31 +177,49 @@ int main (int argc, char* argv[]) {
 			break; 
     }
     
-
+	threshold(grad, final_image, grad.rows, grad.cols, atoi(argv[4]));
 
 	gettimeofday(&new_time, NULL);
 	double time4 = new_time.tv_sec+(new_time.tv_usec/1000000.0);
 	o2 << (time4 - time3) << endl;
 	
-	
+	imwrite("a.jpg", final_image);
 	// visualisation
 	// taille d'image réduite pour meilleure disposition sur écran
-    resize(frame, frame, Size(), 0.5, 0.5);
     resize(frame_gray, frame_gray, Size(), 0.5, 0.5);
     resize(frame1, frame1, Size(), 0.5, 0.5);
     resize(grad, grad, Size(), 0.5, 0.5);
-    imshow("Video in",frame);
+    resize(final_image, final_image, Size(), 0.5, 0.5);
     imshow("Video gray",frame_gray);
     imshow("Video mediane",frame1);    
-    imshow("Video contours",grad);  
+    imshow("Video contours",grad);
+    imshow("Image finale", final_image);  
     
 
     key=waitKey(5);
+    free(med_out);
+    free(out);
   }
   }
   
   
 /*--------------- FUNCTIONS ---------------*/
+
+// Fonction de seuillage
+void threshold(Mat in, Mat& out, int row, int col, int s) {
+	int n = row;
+	int m = col;
+	in.copyTo(out);
+	for(int i = 0; i < n; i++) {
+	    for(int j = 0; j < m; j++) {
+	    	if(in.at<uint8>(i, j) > s) {
+	    	
+	    		out.at<uint8>(i, j) = 255;
+	    	}
+	    	else out.at<uint8>(i, j) = 0;
+		}
+	}
+}
 
 // Sobel multithreadé
 void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
@@ -233,10 +255,6 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 	for (int i = 0; i < row; i++)
 	{
 		for(int j = 0; j < col; j++) {
-			/*if(j < 1 || j >= col - 1 || i < 1|| i >= row - 1) { //cas où le pixel est sur un bord   
-				img_out[i*col + j] = img_in[i*col +j];
-			}
-			else{*/
 			
 			NW = img_in[i*col + j - col - 1];
 			N = img_in[i*col + j - col];
@@ -337,16 +355,16 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 		int hist[256];
 		for(int i = 0; i < row; i++) {
 			for(int j = 0; j < col; j++) {
-				/*if(j < r || j >= col - r || i < r|| i >= row - r) // bords
+				if(j < r || j >= col - r || i < r|| i >= row - r) // bords
 					img_out[i*col + j] = img_in[i*col+j];
-				else {*/
+				else {
 					for(int p = 0; p <= 255; p++) { // (re)initialise l'histogramme
 						hist[p] = 0;
 					}
 
 					for(int k = 0; k != d; k++) { // remplit l'histogramme
 						for(int l = 0; l != d; l++) {
-							hist[int(img_in[i*col + j - r*col - r + l + k*col])]++;//i - r*col - r + l + k*col])]++;
+							hist[int(img_in[i*col + j - r*col - r + l + k*col])]++;
 						}
 					}
 					int med = 0, m = 0;
@@ -360,7 +378,7 @@ void sobel_opt_thread(Mat img_in, Mat& img_out, int row, int col) {
 			}
 		}
 	}
-
+}
 
 // filtre median avec trie (non opt)
  // r indique le diametre du filtre a utiliser (doit etre pair et >=3)
