@@ -9,9 +9,9 @@ If there is a problem with the Makefile, use these commands to compile:
   
     For optimized compiling (O2) : `g++ -O2 -std=c++0x -pthread `pkg-config --cflags opencv` projet_sabre.cpp `pkg-config --libs opencv` -o projet_sabre_O2`
     
-To run the program use the command `./executable_name param1 param2 param3`, here `./projet_sabre param1 param2 param3`.
+To run the program use the command `./executable_name param1 param2 param3 param4`, here `./projet_sabre param1 param2 param3 param4`.
 
-Three paramaters are needeed : 
+Four paramaters are needeed : 
 
     - param1 : the median filter type (takes an Integer between 1 and 4)
     
