@@ -1,6 +1,7 @@
 /*
  *---------------------------------------------------------------------------------------------------
-* Pour compiler : g++ `pkg-config --cflags opencv` projet_sob_med_opt_thread.cpp `pkg-config --libs opencv` -o projet_sob_med_opt_thread
+* Pour compiler : g++ `pkg-config --cflags opencv` projet_sabre.cpp `pkg-config --libs opencv` -o projet_sabre
+ou g++ -O2 `pkg-config --cflags opencv` projet_sabre.cpp `pkg-config --libs opencv` -o projet_sabre pour compiler avec l'option O2
  *---------------------------------------------------------------------------------------------------
  */
  
@@ -85,25 +86,18 @@ int main (int argc, char* argv[]) {
   cvNamedWindow("Video gray", WINDOW_AUTOSIZE);
   cvNamedWindow("Video mediane", WINDOW_AUTOSIZE);
   cvNamedWindow("Video contours", WINDOW_AUTOSIZE);
-  cvNamedWindow("Image Finale", WINDOW_AUTOSIZE);
+  //cvNamedWindow("Video Finale", WINDOW_AUTOSIZE);
  
   cvMoveWindow("Video gray", 10 , 30);
   cvMoveWindow("Video mediane",800 , 30);
   cvMoveWindow("Video contours",10 , 500);
-   cvMoveWindow("Image Finale", 800, 500);
+  //cvMoveWindow("Video Finale", 800, 500);
    
   while(key!='q'){
   // acquisition d'une image - librairie OpenCV
     
     cap.read(frame);
-    /*pour filtrer seulement une image
-    frame = imread("img_proj.jpg", CV_LOAD_IMAGE_COLOR);*/
     
-    if(! frame.data )                              // Check for invalid input
-    {
-        cout <<  "Could not open or find the image" << std::endl ;
-        return -1;
-    }
     
   //conversion en niveau de gris - librairie OpenCV
     cvtColor(frame, frame_gray, CV_BGR2GRAY);
@@ -124,7 +118,6 @@ int main (int argc, char* argv[]) {
 			median_basic(frame_gray, frame1, atoi(argv[2])); 
 			break;
 		case 3: { //opt
-			
 			median_hist(frame_gray.data, med_out, atoi(argv[2]), frame_gray.rows, frame_gray.cols);
 			frame1 = Mat(frame_gray.rows, frame_gray.cols, CV_8UC1, med_out);
 			break;
@@ -183,7 +176,7 @@ int main (int argc, char* argv[]) {
 	double time4 = new_time.tv_sec+(new_time.tv_usec/1000000.0);
 	o2 << (time4 - time3) << endl;
 	
-	imwrite("a.jpg", final_image);
+
 	// visualisation
 	// taille d'image réduite pour meilleure disposition sur écran
     resize(frame_gray, frame_gray, Size(), 0.5, 0.5);
@@ -193,7 +186,7 @@ int main (int argc, char* argv[]) {
     imshow("Video gray",frame_gray);
     imshow("Video mediane",frame1);    
     imshow("Video contours",grad);
-    imshow("Image finale", final_image);  
+    imshow("Video finale", final_image);  
     
 
     key=waitKey(5);
